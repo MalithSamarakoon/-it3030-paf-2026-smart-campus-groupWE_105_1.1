@@ -1,0 +1,170 @@
+import React, { useState } from 'react';
+import { toast } from 'react-toastify';
+import api from '../api/api.js';
+import { useNavigate } from "react-router-dom";
+
+const RegistrationForm = () => {
+    const initialState = {
+        username: '',
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: ''
+    };
+
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState(initialState);
+    const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
+
+    // Password Complexity Logic [cite: 198-200]
+    const validation = {
+        length: formData.password.length >= 8,
+        complexity: /[a-z]/.test(formData.password) && /[A-Z]/.test(formData.password),
+        digit: /\d/.test(formData.password),
+        special: /[@#$%^&+=!]/.test(formData.password)
+    };
+
+    const passwordsMatch = formData.password === formData.confirmPassword;
+    const showMatchError = formData.confirmPassword.length > 0 && !passwordsMatch;
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        if (errors[name]) setErrors({ ...errors, [name]: '' });
+    };
+
+    const validateField = (name, value) => {
+        let errorMsg = '';
+        if (value.trim() === '') return '';
+
+        switch (name) {
+            case 'email':
+
+                const emailRegex = /^it.*@my\.sliit\.lk$/i;
+                if (!emailRegex.test(value)) {
+                    errorMsg = "Use your university email (e.g., it21XXXXXX@my.sliit.lk)";
+                }
+                break;
+            case 'phone':
+                const phoneRegex = /^\d{10}$/;
+                if (!phoneRegex.test(value)) {
+                    errorMsg = "Phone number must have exactly 10 digits.";
+                }
+                break;
+            default:
+                break;
+        }
+        return errorMsg;
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        const error = validateField(name, value);
+        setErrors((prev) => ({ ...prev, [name]: error }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const hasErrors = Object.values(errors).some(msg => msg !== '');
+        if (hasErrors) {
+            toast.error("Please fix errors before submitting.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const payload = {
+                username: formData.username,
+                email: formData.email,
+                phoneNumber: formData.phone,
+                password: formData.password
+            };
+
+            // Register only - JWT/Login logic removed as requested
+            await api.post('/auth/register', payload);
+
+            toast.success("Account created! You can now log in.");
+            setTimeout(() => navigate('/login'), 2000);
+            setFormData(initialState);
+        } catch (error) {
+            const errorMessage = error.response?.data?.error || "Registration failed.";
+            toast.error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="space-y-4">
+                {[
+                    { label: 'Username', name: 'username', type: 'text' },
+                    { label: 'University Email', name: 'email', type: 'email' },
+                    { label: 'Phone Number', name: 'phone', type: 'text' },
+                ].map((field) => (
+                    <div key={field.name} className="flex flex-col">
+                        <label className="text-green-700 font-semibold text-sm mb-1 ml-1">{field.label}</label>
+                        <input
+                            type={field.type}
+                            name={field.name}
+                            autoComplete={"off"}
+                            value={formData[field.name]}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            className={`w-full border rounded-xl p-2 focus:outline-none focus:ring-2 transition-all ${
+                                errors[field.name] ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-green-300'
+                            }`}
+                            required
+                        />
+                        {errors[field.name] && <span className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors[field.name]}</span>}
+                    </div>
+                ))}
+
+                <div className="flex flex-col">
+                    <label className="text-green-700 font-semibold text-sm mb-1 ml-1">Password</label>
+                    <input
+                        type="password"
+                        name="password"
+                        autoComplete={"new-password"}
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-green-300 transition-all"
+                        required
+                    />
+                    <ul className="mt-3 grid grid-cols-1 gap-1 text-xs px-1">
+                        <li className={validation.length ? 'text-green-600' : 'text-red-500'}>● Min 8 characters</li>
+                        <li className={validation.complexity ? 'text-green-600' : 'text-red-500'}>● Upper & Lowercase</li>
+                        <li className={validation.digit ? 'text-green-600' : 'text-red-500'}>● One number</li>
+                        <li className={validation.special ? 'text-green-600' : 'text-red-500'}>● Special char (@, #, $, %)</li>
+                    </ul>
+                </div>
+
+                <div className="flex flex-col">
+                    <label className="text-green-700 font-semibold text-sm mb-1 ml-1">Confirm Password</label>
+                    <input
+                        type="password"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className={`w-full border rounded-xl p-2 focus:outline-none focus:ring-2 transition-all ${
+                            showMatchError ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-green-300'
+                        }`}
+                        required
+                    />
+                    {showMatchError && <span className="text-red-500 text-[11px] mt-1 ml-1 font-medium">Passwords do not match</span>}
+                </div>
+            </div>
+
+            <button
+                type="submit"
+                disabled={!Object.values(validation).every(Boolean) || !passwordsMatch || loading}
+                className="mt-4 w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-bold py-3 px-6 rounded-2xl shadow-md transition-all cursor-pointer"
+            >
+                {loading ? "Registering..." : "Register"}
+            </button>
+        </form>
+    );
+};
+
+export default RegistrationForm;

@@ -1,4 +1,6 @@
-import {Routes, Route, BrowserRouter} from 'react-router-dom';
+import {Routes, Route, BrowserRouter, useLocation} from 'react-router-dom';
+import {ToastContainer} from "react-toastify";
+import RegistrationPage from './pages/RegistrationPage';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ServiceCards from './components/ServiceCards';
@@ -7,24 +9,32 @@ import './App.css'
 
 const HomePage = () => (
     <>
-      <Navbar />
+
       <Hero />
       <ServiceCards />
-      <Footer/>
+
     </>
 )
 
 function App() {
 
-  return (
-      <div className="App">
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-          </Routes>
-        </BrowserRouter>
-      </div>
-  )
+  const location = useLocation();
+  const hideLayout = location.pathname === '/registration';
+
+    return (
+        <div className="min-h-screen bg-white flex flex-col">
+            {!hideLayout && <Navbar />}
+            <main className="flex-grow">
+                <Routes>
+                    <Route path="/" element={<HomePage/>}/>
+                    <Route path="/registration" element={<RegistrationPage/>}/>
+
+                </Routes>
+            </main>
+            {!hideLayout && <Footer />}
+            <ToastContainer/>
+        </div>
+    );
 }
 
 export default App
