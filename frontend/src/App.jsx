@@ -1,6 +1,7 @@
 import {Routes, Route, BrowserRouter, useLocation} from 'react-router-dom';
 import {ToastContainer} from "react-toastify";
 import RegistrationPage from './pages/RegistrationPage';
+import LoginPage from './pages/LoginPage';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ServiceCards from './components/ServiceCards';
@@ -19,7 +20,7 @@ const HomePage = () => (
 function App() {
 
   const location = useLocation();
-  const hideLayout = location.pathname === '/registration';
+  const hideLayout = location.pathname === '/registration' || location.pathname === '/login';
 
     return (
         <div className="min-h-screen bg-white flex flex-col">
@@ -28,6 +29,7 @@ function App() {
                 <Routes>
                     <Route path="/" element={<HomePage/>}/>
                     <Route path="/registration" element={<RegistrationPage/>}/>
+                    <Route path="/login" element={<LoginPage/>}/>
 
                 </Routes>
             </main>

@@ -81,14 +81,23 @@ const RegistrationForm = () => {
                 password: formData.password
             };
 
-            // Register only - JWT/Login logic removed as requested
-            await api.post('/auth/register', payload);
 
-            toast.success("Account created! You can now log in.");
-            setTimeout(() => navigate('/login'), 2000);
-            setFormData(initialState);
+            const response = await api.post('/auth/register', payload);
+
+
+            if (response.data.token) {
+                localStorage.setItem("user", JSON.stringify(response.data));
+
+
+                window.dispatchEvent(new Event("authChange"));
+
+                toast.success("Registration successful! Welcome to Smart Campus.");
+
+
+                navigate('/');
+            }
         } catch (error) {
-            const errorMessage = error.response?.data?.error || "Registration failed.";
+            const errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
             toast.error(errorMessage);
         } finally {
             setLoading(false);
