@@ -14,6 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
@@ -49,6 +50,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Public
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // Role-based access
+                        .requestMatchers(HttpMethod.GET, "/api/resources/**").hasAnyRole("STUDENT", "ADMIN")
+                        .requestMatchers("/api/resources/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );
 
