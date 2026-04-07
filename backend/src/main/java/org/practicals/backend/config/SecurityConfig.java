@@ -52,6 +52,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // Role-based access
                         .requestMatchers(HttpMethod.GET, "/api/resources/**").hasAnyRole("STUDENT", "ADMIN")
                         .requestMatchers("/api/resources/**").hasRole("ADMIN")
+                        // Booking endpoints: approve and reject are ADMIN-only
+                        .requestMatchers("/api/bookings/*/approve", "/api/bookings/*/reject").hasRole("ADMIN")
+                        // All other booking operations require authentication
+                        .requestMatchers("/api/bookings/**").hasAnyRole("STUDENT", "ADMIN")
                         .anyRequest().authenticated()
                 );
 
