@@ -28,6 +28,8 @@ public class User {
 
     private String phoneNumber;
 
+    private String profilePicturePath;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;

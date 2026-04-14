@@ -24,8 +24,8 @@ const Navbar = () => {
 
 
     const handleSignOut = () => {
-        localStorage.removeItem('user'); // Clear JWT and User data
-        window.dispatchEvent(new Event("authChange")); // Notify app to update state
+        localStorage.removeItem('user');
+        window.dispatchEvent(new Event("authChange"));
         setShowDropdown(false);
         navigate('/login');
     };
