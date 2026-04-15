@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../api/api';
+import ImagePreview from '../../components/ImagePreview';
 
 const ResourceForm = () => {
     const { id } = useParams();
@@ -18,6 +19,7 @@ const ResourceForm = () => {
         availabilityEnd: ''
     });
 
+    const [selectedFiles, setSelectedFiles] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -58,28 +60,131 @@ const ResourceForm = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleFileSelect = (e) => {
+        const files = Array.from(e.target.files || []);
+        const maxFiles = 4;
+
+        // Validate: max 4 files, max 5MB each
+        const validFiles = [];
+
+        for (let file of files) {
+            // Check file size
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error(`${file.name} exceeds 5MB size limit`);
+                continue;
+            }
+
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                toast.error(`${file.name} is not a valid image format (jpg, png, webp supported)`);
+                continue;
+            }
+
+            validFiles.push(file);
+        }
+
+        // Check total count
+        if (validFiles.length + selectedFiles.length > maxFiles) {
+            toast.warn(`Maximum 4 images allowed. Selected ${validFiles.length + selectedFiles.length}`);
+            validFiles.splice(maxFiles - selectedFiles.length);
+        }
+
+        // Create preview URLs
+        const newFiles = validFiles.map(file => ({
+            file,
+            name: file.name,
+            preview: URL.createObjectURL(file)
+        }));
+
+        setSelectedFiles([...selectedFiles, ...newFiles]);
+
+        // Clear input
+        e.target.value = '';
+    };
+
+    const handleRemoveFile = (index) => {
+        const newFiles = [...selectedFiles];
+        URL.revokeObjectURL(newFiles[index].preview); // Clean up preview URL
+        newFiles.splice(index, 1);
+        setSelectedFiles(newFiles);
+    };
+
+    const buildSubmitData = (imageFieldName = 'images') => {
+        const submitData = new FormData();
+
+        submitData.append('name', formData.name);
+        submitData.append('type', formData.type);
+        submitData.append('location', formData.location);
+        submitData.append('status', formData.status);
+
+        if (formData.capacity) {
+            submitData.append('capacity', formData.capacity);
+        }
+        if (formData.availabilityStart) {
+            submitData.append('availabilityStart', formData.availabilityStart);
+        }
+        if (formData.availabilityEnd) {
+            submitData.append('availabilityEnd', formData.availabilityEnd);
+        }
+
+        selectedFiles.forEach((fileObj) => {
+            submitData.append(imageFieldName, fileObj.file, fileObj.name);
+        });
+
+        return submitData;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
-        const payload = {
-            ...formData,
-            capacity: formData.capacity === '' ? null : parseInt(formData.capacity, 10),
-            availabilityStart: formData.availabilityStart ? `${formData.availabilityStart}:00` : null,
-            availabilityEnd: formData.availabilityEnd ? `${formData.availabilityEnd}:00` : null,
-        };
-
         try {
-            if (isEdit) {
-                await api.put(`/resources/${id}`, payload);
-                toast.success("Resource updated successfully");
-            } else {
-                await api.post(`/resources`, payload);
-                toast.success("Resource created successfully");
+            const imageFieldCandidates = ['images', 'imageFiles', 'files'];
+            const requestWithPayload = async (payload) => {
+                if (isEdit) {
+                    await api.put(`/resources/${id}`, payload);
+                    return;
+                }
+                await api.post('/resources', payload);
+            };
+
+            let saved = false;
+            let lastError = null;
+            const hasImages = selectedFiles.length > 0;
+
+            for (let i = 0; i < imageFieldCandidates.length; i += 1) {
+                const imageFieldName = hasImages ? imageFieldCandidates[i] : 'images';
+
+                try {
+                    const payload = buildSubmitData(imageFieldName);
+                    await requestWithPayload(payload);
+                    saved = true;
+                    break;
+                } catch (error) {
+                    lastError = error;
+
+                    const status = error?.response?.status;
+                    const canRetry = hasImages && status === 500 && i < imageFieldCandidates.length - 1;
+
+                    if (!canRetry) {
+                        throw error;
+                    }
+                }
             }
+
+            if (!saved && lastError) {
+                throw lastError;
+            }
+
+            toast.success(isEdit ? "Resource updated successfully" : "Resource created successfully");
+
+            // Clean up preview URLs
+            selectedFiles.forEach(fileObj => URL.revokeObjectURL(fileObj.preview));
+
             navigate('/resources');
         } catch (error) {
-            const resMessage = error.response?.data?.error || "Failed to save resource";
+            const resMessage = error.response?.data?.error || error.message || "Failed to save resource";
             toast.error(resMessage);
         } finally {
             setLoading(false);
@@ -147,6 +252,36 @@ const ResourceForm = () => {
                             <input type="time" name="availabilityEnd" value={formData.availabilityEnd} onChange={handleChange}
                                 className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-medium text-slate-800 bg-white" />
                         </div>
+                    </div>
+
+                    {/* Image Upload Section */}
+                    <div className="bg-blue-50 p-6 rounded-2xl border border-blue-200">
+                        <label className="block text-slate-700 font-semibold mb-3 text-sm">Add Resource Images <span className="text-slate-500 font-normal">(Optional - max 4 images)</span></label>
+
+                        {/* File Input */}
+                        <div className="mb-4">
+                            <label className="inline-block cursor-pointer">
+                                <div className="px-6 py-4 bg-white border-2 border-dashed border-blue-300 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all text-center">
+                                    <div className="flex items-center justify-center space-x-2">
+                                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        <span className="text-slate-700 font-medium">Click to upload or drag images here</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-2">JPG, PNG, WebP up to 5MB each</p>
+                                </div>
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept=".jpg,.jpeg,.png,.webp"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+
+                        {/* Image Preview */}
+                        <ImagePreview selectedFiles={selectedFiles} onRemove={handleRemoveFile} maxImages={4} />
                     </div>
 
                     <div className="flex gap-4 pt-6 border-t border-slate-100 mt-8">

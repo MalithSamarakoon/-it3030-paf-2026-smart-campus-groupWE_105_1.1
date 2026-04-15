@@ -1,16 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 import api from '../../api/api';
+
+const IMAGE_PLACEHOLDER = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect fill="%23f1f5f9" width="400" height="300"/><text x="50%" y="50%" font-size="24" fill="%2364748b" text-anchor="middle" dominant-baseline="middle">Image not available</text></svg>';
+
+const getApiOrigin = () => {
+    try {
+        return new URL(api.defaults.baseURL).origin;
+    } catch {
+        return 'http://localhost:8081';
+    }
+};
+
+const getImageCandidates = (imageUrl) => {
+    if (!imageUrl) return [];
+
+    if (/^(https?:\/\/|data:|blob:)/i.test(imageUrl)) {
+        return [imageUrl];
+    }
+
+    const apiOrigin = getApiOrigin();
+    const normalized = `/${String(imageUrl).replace(/\\/g, '/').replace(/^\/+/, '')}`;
+    const fileName = normalized.split('/').filter(Boolean).pop();
+
+    const candidates = [
+        `${apiOrigin}${normalized}`,
+        normalized.startsWith('/uploads/') ? `${apiOrigin}/${fileName}` : `${apiOrigin}/uploads/${fileName}`,
+    ].filter(Boolean);
+
+    return [...new Set(candidates)];
+};
 
 const ResourceDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [resource, setResource] = useState(null);
+    const [resolvedImageUrls, setResolvedImageUrls] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const storedUser = JSON.parse(localStorage.getItem('user'));
     const isAdmin = storedUser?.roles?.includes('ROLE_ADMIN');
+    const token = storedUser?.token;
 
     useEffect(() => {
         const fetchResource = async () => {
@@ -26,6 +62,60 @@ const ResourceDetails = () => {
         };
         fetchResource();
     }, [id, navigate]);
+
+    useEffect(() => {
+        if (!resource?.imageUrls?.length) {
+            setResolvedImageUrls([]);
+            return;
+        }
+
+        let cancelled = false;
+        const objectUrls = [];
+
+        const resolveImageUrl = async (imageUrl) => {
+            const candidates = getImageCandidates(imageUrl);
+
+            for (const candidate of candidates) {
+                try {
+                    const response = await fetch(candidate, {
+                        headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    });
+
+                    if (!response.ok) {
+                        continue;
+                    }
+
+                    const contentType = response.headers.get('content-type') || '';
+                    if (!contentType.startsWith('image/')) {
+                        continue;
+                    }
+
+                    const blob = await response.blob();
+                    const objectUrl = URL.createObjectURL(blob);
+                    objectUrls.push(objectUrl);
+                    return objectUrl;
+                } catch {
+                    // Try next candidate URL.
+                }
+            }
+
+            return null;
+        };
+
+        const resolveAllImages = async () => {
+            const resolved = await Promise.all(resource.imageUrls.map(resolveImageUrl));
+            if (!cancelled) {
+                setResolvedImageUrls(resolved);
+            }
+        };
+
+        resolveAllImages();
+
+        return () => {
+            cancelled = true;
+            objectUrls.forEach((url) => URL.revokeObjectURL(url));
+        };
+    }, [resource, token]);
 
     const handleDelete = async () => {
         if (window.confirm("Are you sure you want to delete this resource?")) {
@@ -62,6 +152,43 @@ const ResourceDetails = () => {
                         {resource.status.replace('_', ' ')}
                     </span>
                 </div>
+
+                {/* Image Gallery Section */}
+                {resource.imageUrls && resource.imageUrls.length > 0 ? (
+                    <div className="mb-10 rounded-2xl overflow-hidden border border-slate-200 shadow-md">
+                        <Swiper
+                            modules={[Navigation, Pagination]}
+                            navigation
+                            pagination={{ clickable: true }}
+                            spaceBetween={0}
+                            slidesPerView={1}
+                            className="w-full"
+                        >
+                            {resource.imageUrls.map((imageUrl, index) => (
+                                <SwiperSlide key={index}>
+                                    <div className="w-full aspect-video bg-slate-100 overflow-hidden">
+                                        <img
+                                            src={resolvedImageUrls[index] || IMAGE_PLACEHOLDER}
+                                            alt={`${resource.name} - Image ${index + 1}`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.src = IMAGE_PLACEHOLDER;
+                                            }}
+                                        />
+                                    </div>
+                                </SwiperSlide>
+                            ))}
+                        </Swiper>
+                    </div>
+                ) : (
+                    <div className="mb-10 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-300 p-8 text-center">
+                        <svg className="w-16 h-16 text-slate-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-slate-600 font-semibold">No images available</p>
+                        <p className="text-slate-500 text-sm mt-1">This resource has no attached images</p>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">

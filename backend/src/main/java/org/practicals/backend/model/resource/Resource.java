@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.practicals.backend.model.userManagement.User;
 
 import java.time.LocalTime;
+import java.util.List;
 
 @Entity
 @Table(name = "resources")
@@ -40,6 +41,11 @@ public class Resource {
     private LocalTime availabilityStart;
 
     private LocalTime availabilityEnd;
+
+    @ElementCollection
+    @CollectionTable(name = "resource_images", joinColumns = @JoinColumn(name = "resource_id"))
+    @Column(name = "image_url")
+    private List<String> imageUrls;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")

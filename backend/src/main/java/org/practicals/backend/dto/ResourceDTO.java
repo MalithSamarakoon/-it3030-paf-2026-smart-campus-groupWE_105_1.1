@@ -5,8 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.practicals.backend.model.resource.ResourceStatus;
 import org.practicals.backend.model.resource.ResourceType;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalTime;
+import java.util.List;
 
 @Data
 public class ResourceDTO {
@@ -30,6 +32,10 @@ public class ResourceDTO {
     private LocalTime availabilityStart;
 
     private LocalTime availabilityEnd;
+
+    private List<MultipartFile> images;
+
+    private List<String> imageUrls;
 
     private String createdByUsername;
 }
