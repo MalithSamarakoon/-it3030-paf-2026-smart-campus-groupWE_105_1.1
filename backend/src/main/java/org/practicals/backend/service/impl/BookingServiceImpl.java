@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -108,8 +109,17 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public BookingDTO getBookingById(Long id) {
+    public BookingDTO getBookingById(Long id, String username) {
         Booking booking = findBookingOrThrow(id);
+
+        User requester = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+        boolean isAdmin = requester.getRole() == Role.ROLE_ADMIN;
+        if (!isAdmin && !booking.getUser().getUsername().equals(username)) {
+            throw new IllegalArgumentException("You can only view your own bookings");
+        }
+
         return mapToDTO(booking);
     }
 
@@ -151,6 +161,72 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         return mapToDTO(bookingRepository.save(booking));
+    }
+
+    @Override
+    public BookingDTO updatePendingBooking(Long id, BookingDTO dto, String username) {
+        Booking booking = findBookingOrThrow(id);
+
+        if (!booking.getUser().getUsername().equals(username)) {
+            throw new IllegalArgumentException("You can only update your own bookings");
+        }
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalArgumentException("Only PENDING bookings can be updated");
+        }
+
+        if (!dto.getStartTime().isBefore(dto.getEndTime())) {
+            throw new IllegalArgumentException("Start time must be before end time");
+        }
+
+        Resource resource = resourceRepository.findById(dto.getResourceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found with id: " + dto.getResourceId()));
+
+        if (resource.getStatus() != ResourceStatus.ACTIVE) {
+            throw new IllegalArgumentException("Resource '" + resource.getName() + "' is not currently active");
+        }
+
+        if (dto.getAttendees() != null && resource.getCapacity() != null
+                && dto.getAttendees() > resource.getCapacity()) {
+            throw new IllegalArgumentException(
+                    "Attendees (" + dto.getAttendees() + ") exceed resource capacity (" + resource.getCapacity() + ")");
+        }
+
+        List<Booking> conflicts = bookingRepository.findConflictingBookings(
+                dto.getResourceId(), dto.getDate(), dto.getStartTime(), dto.getEndTime());
+
+        Booking conflict = conflicts.stream()
+                .filter(existing -> !Objects.equals(existing.getId(), booking.getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (conflict != null) {
+            throw new IllegalArgumentException(
+                    "Time slot conflicts with an existing booking from "
+                            + conflict.getStartTime() + " to " + conflict.getEndTime());
+        }
+
+        booking.setResource(resource);
+        booking.setDate(dto.getDate());
+        booking.setStartTime(dto.getStartTime());
+        booking.setEndTime(dto.getEndTime());
+        booking.setPurpose(dto.getPurpose());
+        booking.setAttendees(dto.getAttendees());
+
+        return mapToDTO(bookingRepository.save(booking));
+    }
+
+    @Override
+    public void deletePendingBooking(Long id, String username) {
+        Booking booking = findBookingOrThrow(id);
+
+        if (!booking.getUser().getUsername().equals(username)) {
+            throw new IllegalArgumentException("You can only delete your own bookings");
+        }
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalArgumentException("Only PENDING bookings can be deleted");
+        }
+
+        bookingRepository.delete(booking);
     }
 
     // ---- Private Helpers ----

@@ -54,7 +54,31 @@ public class BookingController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<BookingDTO> getBookingById(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.getBookingById(id));
+        String username = getAuthenticatedUsername();
+        return ResponseEntity.ok(bookingService.getBookingById(id, username));
+    }
+
+    /**
+     * PUT /api/bookings/{id}
+     * USER: update own pending booking details.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<BookingDTO> updateBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody BookingDTO bookingDTO) {
+        String username = getAuthenticatedUsername();
+        return ResponseEntity.ok(bookingService.updatePendingBooking(id, bookingDTO, username));
+    }
+
+    /**
+     * DELETE /api/bookings/{id}
+     * USER: delete own pending booking.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBooking(@PathVariable Long id) {
+        String username = getAuthenticatedUsername();
+        bookingService.deletePendingBooking(id, username);
+        return ResponseEntity.noContent().build();
     }
 
     /**

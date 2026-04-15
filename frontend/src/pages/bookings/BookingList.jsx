@@ -108,6 +108,17 @@ const BookingList = () => {
         }
     };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm('Delete this pending booking? This action cannot be undone.')) return;
+        try {
+            await api.delete(`/bookings/${id}`);
+            setBookings(prev => prev.filter(b => b.id !== id));
+            toast.success('Booking deleted');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to delete booking');
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
             {/* Header */}
@@ -120,12 +131,14 @@ const BookingList = () => {
                         {isAdmin ? 'Manage and review all booking requests.' : 'Track and manage your booking requests.'}
                     </p>
                 </div>
-                <Link
-                    to="/bookings/new"
-                    className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-md"
-                >
-                    + New Booking
-                </Link>
+                {!isAdmin && (
+                    <Link
+                        to="/bookings/new"
+                        className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-md"
+                    >
+                        + New Booking
+                    </Link>
+                )}
             </div>
 
             {/* Filters */}
@@ -220,8 +233,24 @@ const BookingList = () => {
                                                 </button>
                                             </div>
                                         )}
-                                        {/* User cancel */}
-                                        {!isAdmin && (booking.status === 'PENDING' || booking.status === 'APPROVED') && (
+                                        {/* User actions */}
+                                        {!isAdmin && booking.status === 'PENDING' && (
+                                            <div className="flex justify-end gap-2">
+                                                <Link
+                                                    to={`/bookings/edit/${booking.id}`}
+                                                    className="px-3 py-1 text-xs font-bold rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition"
+                                                >
+                                                    Edit
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleDelete(booking.id)}
+                                                    className="px-3 py-1 text-xs font-bold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                        {!isAdmin && booking.status === 'APPROVED' && (
                                             <button
                                                 onClick={() => handleCancel(booking.id)}
                                                 className="px-3 py-1 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 transition"

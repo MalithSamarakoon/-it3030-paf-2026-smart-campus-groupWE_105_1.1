@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../api/api';
 
 const BookingForm = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
+    const isEditMode = Boolean(id);
     const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(false);
     const [fetchingResources, setFetchingResources] = useState(true);
+    const [fetchingBooking, setFetchingBooking] = useState(isEditMode);
     const [formData, setFormData] = useState({
         resourceId: '',
         date: '',
@@ -34,6 +37,36 @@ const BookingForm = () => {
         };
         fetchResources();
     }, []);
+
+    useEffect(() => {
+        if (!isEditMode) {
+            setFetchingBooking(false);
+            return;
+        }
+
+        const fetchBooking = async () => {
+            try {
+                const response = await api.get(`/bookings/${id}`);
+                const booking = response.data;
+                setFormData({
+                    resourceId: booking.resourceId?.toString() || '',
+                    date: booking.date || '',
+                    startTime: booking.startTime?.substring(0, 5) || '',
+                    endTime: booking.endTime?.substring(0, 5) || '',
+                    purpose: booking.purpose || '',
+                    attendees: booking.attendees?.toString() || ''
+                });
+            } catch (error) {
+                const msg = error.response?.data?.error || 'Failed to load booking details';
+                toast.error(msg);
+                navigate('/bookings');
+            } finally {
+                setFetchingBooking(false);
+            }
+        };
+
+        fetchBooking();
+    }, [id, isEditMode, navigate]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -63,48 +96,66 @@ const BookingForm = () => {
 
         setLoading(true);
         try {
-            await api.post('/bookings', payload);
-            toast.success('Booking request submitted successfully!');
+            if (isEditMode) {
+                await api.put(`/bookings/${id}`, payload);
+                toast.success('Booking updated successfully!');
+            } else {
+                await api.post('/bookings', payload);
+                toast.success('Booking request submitted successfully!');
+            }
             navigate('/bookings');
         } catch (error) {
-            const msg = error.response?.data?.error || 'Failed to create booking';
+            const fallbackMessage = isEditMode ? 'Failed to update booking' : 'Failed to create booking';
+            const msg = error.response?.data?.error || fallbackMessage;
             toast.error(msg);
         } finally {
             setLoading(false);
         }
     };
 
+    if (fetchingResources || fetchingBooking) {
+        return (
+            <div className="max-w-2xl mx-auto px-4 py-12">
+                <div className="bg-white rounded-3xl shadow-lg border border-emerald-100 p-8 text-slate-500 text-center">
+                    Loading booking form...
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-2xl mx-auto px-4 py-12">
             <div className="bg-white rounded-3xl shadow-lg border border-emerald-100 overflow-hidden">
                 <div className="bg-emerald-600 px-8 py-6">
-                    <h1 className="text-2xl font-bold text-white">New Booking Request</h1>
-                    <p className="text-emerald-100 text-sm mt-1">Fill in the details to request a resource booking.</p>
+                    <h1 className="text-2xl font-bold text-white">
+                        {isEditMode ? 'Edit Booking Request' : 'New Booking Request'}
+                    </h1>
+                    <p className="text-emerald-100 text-sm mt-1">
+                        {isEditMode
+                            ? 'Update your pending booking details before review.'
+                            : 'Fill in the details to request a resource booking.'}
+                    </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
                     {/* Resource Selection */}
                     <div>
                         <label className="block text-slate-700 font-semibold mb-2 text-sm">Resource *</label>
-                        {fetchingResources ? (
-                            <p className="text-slate-400 text-sm">Loading resources...</p>
-                        ) : (
-                            <select
-                                name="resourceId"
-                                value={formData.resourceId}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white font-medium text-slate-800"
-                            >
-                                <option value="">Select a resource...</option>
-                                {resources.map(r => (
-                                    <option key={r.id} value={r.id}>
-                                        {r.name} — {r.type === 'ROOM' ? 'Lecture Hall' : r.type}
-                                        {r.capacity ? ` (Cap: ${r.capacity})` : ''} | {r.location}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
+                        <select
+                            name="resourceId"
+                            value={formData.resourceId}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white font-medium text-slate-800"
+                        >
+                            <option value="">Select a resource...</option>
+                            {resources.map(r => (
+                                <option key={r.id} value={r.id}>
+                                    {r.name} — {r.type === 'ROOM' ? 'Lecture Hall' : r.type}
+                                    {r.capacity ? ` (Cap: ${r.capacity})` : ''} | {r.location}
+                                </option>
+                            ))}
+                        </select>
                         {selectedResource?.capacity && (
                             <p className="text-xs text-emerald-600 mt-1 font-semibold">
                                 Max capacity: {selectedResource.capacity} people
@@ -197,7 +248,7 @@ const BookingForm = () => {
                             disabled={loading}
                             className={`flex-1 py-3.5 rounded-xl font-bold text-white shadow-md transition-transform active:scale-[0.98] ${loading ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                         >
-                            {loading ? 'Submitting...' : 'Submit Booking'}
+                            {loading ? 'Saving...' : isEditMode ? 'Update Booking' : 'Submit Booking'}
                         </button>
                     </div>
                 </form>

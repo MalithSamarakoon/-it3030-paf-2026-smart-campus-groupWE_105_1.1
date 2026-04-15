@@ -41,6 +41,7 @@ function App() {
                     <Route path="/resources/:id" element={<ResourceDetails/>}/>
                     <Route path="/bookings" element={<BookingList/>}/>
                     <Route path="/bookings/new" element={<BookingForm/>}/>
+                    <Route path="/bookings/edit/:id" element={<BookingForm/>}/>
 
                 </Routes>
             </main>

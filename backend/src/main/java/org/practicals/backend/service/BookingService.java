@@ -11,11 +11,15 @@ public interface BookingService {
 
     List<BookingDTO> getBookings(String username, BookingStatus status);
 
-    BookingDTO getBookingById(Long id);
+    BookingDTO getBookingById(Long id, String username);
 
     BookingDTO approveBooking(Long id);
 
     BookingDTO rejectBooking(Long id, String rejectionReason);
 
     BookingDTO cancelBooking(Long id, String username);
+
+    BookingDTO updatePendingBooking(Long id, BookingDTO bookingDTO, String username);
+
+    void deletePendingBooking(Long id, String username);
 }
