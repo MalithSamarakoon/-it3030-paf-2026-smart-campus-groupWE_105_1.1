@@ -6,6 +6,8 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ServiceCards from './components/ServiceCards';
 import Footer from './components/Footer';
+import AccountPage from './pages/AccountPage';
+import ProfileEditPage from './pages/ProfileEditPage';
 import './App.css'
 
 const HomePage = () => (
@@ -30,6 +32,8 @@ function App() {
                     <Route path="/" element={<HomePage/>}/>
                     <Route path="/registration" element={<RegistrationPage/>}/>
                     <Route path="/login" element={<LoginPage/>}/>
+                    <Route path="/profile" element={<AccountPage/>}/>
+                    <Route path="/profile/edit" element={<ProfileEditPage/>}/>
 
                 </Routes>
             </main>
