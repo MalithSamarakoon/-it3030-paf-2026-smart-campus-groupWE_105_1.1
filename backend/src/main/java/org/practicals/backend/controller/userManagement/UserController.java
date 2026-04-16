@@ -34,4 +34,10 @@ public class UserController {
             @RequestPart(value = "profileImage", required = false) MultipartFile image) throws IOException {
         return ResponseEntity.ok(userService.updateUserProfile(userDetails.getId(), request, image));
     }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteCurrentUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        userService.deleteUserById(userDetails.getId());
+        return ResponseEntity.ok("User account deleted successfully.");
+    }
 }
