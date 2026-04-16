@@ -1,7 +1,12 @@
-import {Routes, Route, BrowserRouter, useLocation} from 'react-router-dom';
+import {Routes, Route, useLocation} from 'react-router-dom';
 import {ToastContainer} from "react-toastify";
 import RegistrationPage from './pages/RegistrationPage';
 import LoginPage from './pages/LoginPage';
+import ResourceList from './pages/resources/ResourceList';
+import ResourceForm from './pages/resources/ResourceForm';
+import ResourceDetails from './pages/resources/ResourceDetails';
+import BookingList from './pages/bookings/BookingList';
+import BookingForm from './pages/bookings/BookingForm';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ServiceCards from './components/ServiceCards';
@@ -34,6 +39,13 @@ function App() {
                     <Route path="/login" element={<LoginPage/>}/>
                     <Route path="/profile" element={<AccountPage/>}/>
                     <Route path="/profile/edit" element={<ProfileEditPage/>}/>
+                    <Route path="/resources" element={<ResourceList/>}/>
+                    <Route path="/resources/new" element={<ResourceForm/>}/>
+                    <Route path="/resources/edit/:id" element={<ResourceForm/>}/>
+                    <Route path="/resources/:id" element={<ResourceDetails/>}/>
+                    <Route path="/bookings" element={<BookingList/>}/>
+                    <Route path="/bookings/new" element={<BookingForm/>}/>
+                    <Route path="/bookings/edit/:id" element={<BookingForm/>}/>
 
                 </Routes>
             </main>

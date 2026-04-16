@@ -93,7 +93,7 @@ const Hero = () => {
             </Swiper>
 
             {/* Custom CSS to handle the Green Navigation buttons */}
-            <style jsx global>{`
+            <style>{`
                 .swiper-button-next, .swiper-button-prev {
                     color: #059669 !important; /* emerald-600 */
                 }
