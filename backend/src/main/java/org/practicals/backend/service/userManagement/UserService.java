@@ -106,6 +106,18 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
+    @Transactional
+    public void processOAuthPostLogin(String email, String name) {
+        if (!userRepository.existsByEmail(email)) {
+            User newUser = new User();
+            newUser.setUsername(email);
+            newUser.setEmail(email);
+            newUser.setRole(Role.ROLE_STUDENT);
+            newUser.setPassword("");
+            userRepository.save(newUser);
+        }
+    }
+
     private UserResponse mapToUserResponse(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());
