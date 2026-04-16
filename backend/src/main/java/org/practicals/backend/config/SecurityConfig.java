@@ -17,6 +17,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.practicals.backend.security.oauth2.OAuth2AuthenticationSuccessHandler;
 
 import java.util.Arrays;
 
@@ -25,15 +26,13 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final AuthTokenFilter authTokenFilter;
+    private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
 
 
-    public SecurityConfig(AuthTokenFilter authTokenFilter) {
+    public SecurityConfig(AuthTokenFilter authTokenFilter, OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
+
         this.authTokenFilter = authTokenFilter;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     }
 
     @Bean
@@ -57,6 +56,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/images/**").permitAll()
+                        .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // Role-based access
                         .requestMatchers(HttpMethod.GET, "/api/resources/**").hasAnyRole("STUDENT", "ADMIN")
                         .requestMatchers("/api/resources/**").hasRole("ADMIN")
@@ -65,6 +65,9 @@ public class SecurityConfig {
                         // All other booking operations require authentication
                         .requestMatchers("/api/bookings/**").hasAnyRole("STUDENT", "ADMIN")
                         .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2SuccessHandler) // Injected handler to generate JWT
                 );
 
 

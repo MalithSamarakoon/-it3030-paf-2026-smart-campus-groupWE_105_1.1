@@ -13,7 +13,9 @@ import ServiceCards from './components/ServiceCards';
 import Footer from './components/Footer';
 import AccountPage from './pages/AccountPage';
 import ProfileEditPage from './pages/ProfileEditPage';
+import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler.jsx";
 import './App.css'
+
 
 const HomePage = () => (
     <>
@@ -37,6 +39,7 @@ function App() {
                     <Route path="/" element={<HomePage/>}/>
                     <Route path="/registration" element={<RegistrationPage/>}/>
                     <Route path="/login" element={<LoginPage/>}/>
+                    <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
                     <Route path="/profile" element={<AccountPage/>}/>
                     <Route path="/profile/edit" element={<ProfileEditPage/>}/>
                     <Route path="/resources" element={<ResourceList/>}/>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../api/api.js';
+import googleIcon from '../assets/google-icon.png';
 
 const LoginForm = () => {
     const [username, setUsername] = useState('');
@@ -15,19 +16,14 @@ const LoginForm = () => {
         setLoading(true);
 
         try {
-            // Updated to match your backend @RequestMapping("/api/auth")
             const response = await api.post("/auth/signin", {
                 username,
                 password
             });
 
             if (response.data.token) {
-
                 localStorage.setItem("user", JSON.stringify(response.data));
-
-
                 window.dispatchEvent(new Event("authChange"));
-
                 toast.success(`Welcome back, ${response.data.username}!`);
                 navigate("/");
             }
@@ -35,11 +31,15 @@ const LoginForm = () => {
             const resMessage =
                 (error.response && error.response.data && error.response.data.message) ||
                 "Invalid username or password. Please try again.";
-
             toast.error(resMessage);
         } finally {
             setLoading(false);
         }
+    };
+
+
+    const handleGoogleLogin = () => {
+        window.location.href = "http://localhost:8081/oauth2/authorization/google";
     };
 
     return (
@@ -49,7 +49,6 @@ const LoginForm = () => {
             </h2>
 
             <form onSubmit={handleLogin} className="space-y-6">
-                {/* Username Field */}
                 <div>
                     <label className="block text-green-700 font-semibold mb-2 ml-1 text-sm">
                         Username
@@ -63,7 +62,6 @@ const LoginForm = () => {
                     />
                 </div>
 
-                {/* Password Field */}
                 <div>
                     <label className="block text-green-700 font-semibold mb-2 ml-1 text-sm">
                         Password
@@ -87,6 +85,25 @@ const LoginForm = () => {
                     {loading ? "Verifying..." : "Login"}
                 </button>
             </form>
+
+            {/* Divider */}
+            <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500 font-medium">OR</span>
+                </div>
+            </div>
+
+            {/* Google Login Button */}
+            <button
+                onClick={handleGoogleLogin}
+                className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 hover:border-green-400 py-3 rounded-2xl shadow-sm transition-all active:scale-95 text-gray-700 font-bold"
+            >
+                <img src={googleIcon} alt="Google" className="w-5 h-5" />
+                Continue with Google
+            </button>
 
             <div className="mt-8 text-center">
                 <div className="text-gray-600 text-sm">
