@@ -1,19 +1,44 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/api';
-import { getUser } from '../utils/auth';
-import { Link } from 'react-router-dom';
-import { User, Phone, Mail, Award } from 'lucide-react';
+import { getUser, logout } from '../utils/auth';
+import { Mail, Phone, Award, Trash2 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import DeleteConfirmModal from "../components/DeleteConfirmModal.jsx";
 
 const AccountPage = () => {
     const [profile, setProfile] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const user = getUser();
+    const navigate = useNavigate();
 
     useEffect(() => {
+
         api.get('/users/me', {
             headers: { Authorization: `Bearer ${user?.token}` }
         }).then(res => setProfile(res.data))
             .catch(err => console.error("Error fetching profile", err));
     }, [user?.token]);
+
+
+    const handleDeleteAccount = async () => {
+        try {
+
+            await api.delete('/users/me', {
+                headers: { Authorization: `Bearer ${user?.token}` }
+            });
+
+            toast.success("Your account has been deleted.");
+
+            logout();
+
+            navigate('/');
+        } catch (error) {
+            console.error("Deletion failed", error);
+            toast.error("Failed to delete account. Please try again.");
+            setIsModalOpen(false);
+        }
+    };
 
     if (!profile) return (
         <div className="min-h-screen bg-green-50 flex items-center justify-center">
@@ -67,14 +92,32 @@ const AccountPage = () => {
                         </div>
                     </div>
 
-                    <Link
-                        to="/profile/edit"
-                        className="mt-8 w-full bg-green-600 text-white text-center py-3 rounded-2xl font-bold hover:bg-green-700 transition-colors shadow-md"
-                    >
-                        Edit Profile Details
-                    </Link>
+                    <div className="flex flex-col w-full gap-3 mt-8">
+                        <Link
+                            to="/profile/edit"
+                            className="w-full bg-green-600 text-white text-center py-3 rounded-2xl font-bold hover:bg-green-700 transition-colors shadow-md"
+                        >
+                            Edit Profile Details
+                        </Link>
+
+                        {/* Button triggers the Custom Modal instead of window.confirm */}
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="w-full bg-white text-red-600 border-2 border-red-600 py-3 rounded-2xl font-bold hover:bg-red-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                        >
+                            <Trash2 size={18} />
+                            Delete My Account
+                        </button>
+                    </div>
                 </div>
             </div>
+
+
+            <DeleteConfirmModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onConfirm={handleDeleteAccount}
+            />
         </div>
     );
 };

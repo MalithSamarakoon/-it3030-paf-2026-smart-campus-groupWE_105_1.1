@@ -98,6 +98,14 @@ public class UserService {
         return response;
     }
 
+    @Transactional
+    public void deleteUserById(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found with id: " + userId);
+        }
+        userRepository.deleteById(userId);
+    }
+
     private UserResponse mapToUserResponse(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());
