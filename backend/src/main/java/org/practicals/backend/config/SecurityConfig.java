@@ -1,9 +1,11 @@
 package org.practicals.backend.config;
 
 import org.practicals.backend.security.jwt.AuthTokenFilter;
+import org.practicals.backend.security.oauth2.OAuth2AuthenticationSuccessHandler;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -12,15 +14,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.practicals.backend.security.oauth2.OAuth2AuthenticationSuccessHandler;
 
 import java.util.Arrays;
 
@@ -32,9 +30,8 @@ public class SecurityConfig {
     private final AuthTokenFilter authTokenFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
 
-
-    public SecurityConfig(AuthTokenFilter authTokenFilter, OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
-
+    public SecurityConfig(AuthTokenFilter authTokenFilter,
+                          OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
         this.authTokenFilter = authTokenFilter;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     }
@@ -49,12 +46,11 @@ public class SecurityConfig {
         return (web) -> web.ignoring().requestMatchers("/images/**", "/files/**");
     }
 
-
     @Bean
-        public SecurityFilterChain filterChain(
+    public SecurityFilterChain filterChain(
             HttpSecurity http,
             ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider
-        ) throws Exception {
+    ) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -64,23 +60,18 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/images/**").permitAll()
                         .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // Role-based access
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/resources/**").hasAnyRole("STUDENT", "ADMIN")
                         .requestMatchers("/api/resources/**").hasRole("ADMIN")
-                        // Booking endpoints: approve and reject are ADMIN-only
                         .requestMatchers("/api/bookings/*/approve", "/api/bookings/*/reject").hasRole("ADMIN")
-                        // All other booking operations require authentication
                         .requestMatchers("/api/bookings/**").hasAnyRole("STUDENT", "ADMIN")
-                        .requestMatchers("/api/tickets/**").authenticated() // Ticket endpoints
+                        .requestMatchers("/api/tickets/**").authenticated()
                         .anyRequest().authenticated()
                 );
 
-                if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
-                    http.oauth2Login(oauth2 -> oauth2
-                        .successHandler(oAuth2SuccessHandler) // Injected handler to generate JWT
-                    );
-                }
-
+        if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
+            http.oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler));
+        }
 
         http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -90,9 +81,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:5174"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "x-auth-token"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

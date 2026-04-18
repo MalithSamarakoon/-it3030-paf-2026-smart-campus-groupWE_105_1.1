@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { getAllTickets, getMyTickets } from '../api/ticketApi';
+import { getAllTickets, getAssignedTickets, getMyTickets } from '../api/ticketApi';
 import TicketCard from '../components/tickets/TicketCard';
 import CreateTicketForm from '../components/tickets/CreateTicketForm';
 
@@ -30,12 +30,15 @@ const MaintenancePage = () => {
 
     const user = JSON.parse(localStorage.getItem('user'));
     const isAdmin = user?.roles?.includes('ROLE_ADMIN');
+    const isTechnician = user?.roles?.includes('ROLE_STAFF');
     const filterTabs = isAdmin ? ADMIN_FILTER_TABS : STUDENT_FILTER_TABS;
 
     const fetchTickets = async () => {
         setLoading(true);
         try {
-            const res = isAdmin ? await getAllTickets() : await getMyTickets();
+            const res = isAdmin
+                ? await getAllTickets()
+                : (isTechnician ? await getAssignedTickets() : await getMyTickets());
             setTickets(res.data);
         } catch (err) {
             toast.error('Failed to load tickets');
@@ -46,7 +49,7 @@ const MaintenancePage = () => {
 
     useEffect(() => {
         fetchTickets();
-    }, []);
+    }, [isAdmin, isTechnician]);
 
     useEffect(() => {
         setFilter(isAdmin ? 'ALL' : 'MY_TICKETS');
@@ -68,7 +71,6 @@ const MaintenancePage = () => {
 
     return (
         <div className={`min-h-screen ${isAdmin ? 'bg-gradient-to-br from-slate-50 to-emerald-50' : 'bg-gradient-to-br from-emerald-50 via-cyan-50 to-sky-100'}`}>
-            {/* Page Header */}
             <div className={`${isAdmin ? 'bg-white border-b border-slate-100' : 'bg-white/70 backdrop-blur border-b border-emerald-100'}`}>
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -77,11 +79,15 @@ const MaintenancePage = () => {
                                 {isAdmin ? '🛠️ Maintenance Tickets' : '🎓 My Maintenance Space'}
                             </h1>
                             <p className="text-sm text-slate-400 mt-1">
-                                {isAdmin ? 'Manage all campus maintenance requests' : 'Track and create your requests with a student-friendly view'}
+                                {isAdmin
+                                    ? 'Manage all campus maintenance requests'
+                                    : (isTechnician
+                                        ? 'View and handle tickets assigned to you'
+                                        : 'Track your maintenance requests')}
                             </p>
                         </div>
 
-                        {!isAdmin && (
+                        {!isAdmin && !isTechnician && (
                             <button
                                 onClick={() => setShowCreate(true)}
                                 className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-bold rounded-xl shadow-lg shadow-cyan-200 hover:from-emerald-700 hover:to-cyan-700 transition-all active:scale-95 flex items-center gap-2"
@@ -91,7 +97,6 @@ const MaintenancePage = () => {
                         )}
                     </div>
 
-                    {/* Stats Cards */}
                     <div className={`grid ${isAdmin ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-4'} gap-3 mt-6`}>
                         {filterTabs.map(tab => (
                             <button
@@ -118,7 +123,6 @@ const MaintenancePage = () => {
                 </div>
             </div>
 
-            {/* Ticket Grid */}
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
@@ -126,11 +130,11 @@ const MaintenancePage = () => {
                     </div>
                 ) : filteredTickets.length === 0 ? (
                     <div className="text-center py-20">
-                        <div className="text-6xl mb-4">{isAdmin ? '🎉' : '📭'}</div>
+                        <div className="text-6xl mb-4">🎉</div>
                         <h3 className="text-lg font-bold text-slate-700">{isAdmin ? 'No tickets found' : 'Nothing here yet'}</h3>
                         <p className="text-sm text-slate-400 mt-1">
                             {filter === 'ALL'
-                                ? "You haven't created any tickets yet."
+                                ? (isTechnician ? 'No tickets have been assigned to you yet.' : "You haven't created any tickets yet.")
                                 : `No ${filter.replace('_', ' ').toLowerCase()} tickets.`}
                         </p>
                     </div>
@@ -143,7 +147,6 @@ const MaintenancePage = () => {
                 )}
             </div>
 
-            {/* Create Modal */}
             {showCreate && (
                 <CreateTicketForm
                     onClose={() => setShowCreate(false)}

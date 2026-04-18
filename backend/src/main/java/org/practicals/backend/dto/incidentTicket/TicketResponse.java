@@ -23,6 +23,7 @@ public class TicketResponse {
     private String createdByUsername;
     private Long createdById;
     private String assignedToUsername;
+    private String assignedToTechnicianType;
     private Long assignedToId;
     private int commentCount;
     private List<CommentResponse> comments;

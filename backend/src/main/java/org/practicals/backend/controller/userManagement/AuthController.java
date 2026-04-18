@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -38,11 +38,11 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegistrationRequest request) {
 
-        userService.registerStudent(request);
+        UserResponse registeredUser = userService.registerUser(request);
 
 
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+                new UsernamePasswordAuthenticationToken(registeredUser.getUsername(), request.getPassword()));
 
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
