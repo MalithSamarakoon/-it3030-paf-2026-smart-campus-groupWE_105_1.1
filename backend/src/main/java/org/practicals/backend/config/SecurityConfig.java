@@ -3,6 +3,7 @@ package org.practicals.backend.config;
 import org.practicals.backend.security.jwt.AuthTokenFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -49,7 +51,10 @@ public class SecurityConfig {
 
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider
+        ) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -68,10 +73,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/bookings/**").hasAnyRole("STUDENT", "ADMIN")
                         .requestMatchers("/api/tickets/**").authenticated() // Ticket endpoints
                         .anyRequest().authenticated()
-                )
-                .oauth2Login(oauth2 -> oauth2
-                        .successHandler(oAuth2SuccessHandler) // Injected handler to generate JWT
                 );
+
+                if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
+                    http.oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2SuccessHandler) // Injected handler to generate JWT
+                    );
+                }
 
 
         http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
