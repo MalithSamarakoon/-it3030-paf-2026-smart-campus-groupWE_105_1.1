@@ -1,13 +1,15 @@
 package org.practicals.backend.dto.userManagement;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class RegistrationRequest {
+@NoArgsConstructor
+@AllArgsConstructor
+public class TechnicianOptionResponse {
+    private Long id;
     private String username;
     private String email;
-    private String password;
-    private String phoneNumber;
-    private String role;
     private String technicianType;
 }

@@ -23,6 +23,10 @@ export const getMyTickets = () => {
     return api.get('/tickets/my', { headers: authHeader() });
 };
 
+export const getAssignedTickets = () => {
+    return api.get('/tickets/assigned', { headers: authHeader() });
+};
+
 export const getTicketById = (id) => {
     return api.get(`/tickets/${id}`, { headers: authHeader() });
 };
@@ -33,6 +37,10 @@ export const updateTicketStatus = (id, data) => {
 
 export const assignTicket = (id, data) => {
     return api.patch(`/tickets/${id}/assign`, data, { headers: authHeader() });
+};
+
+export const getTechnicians = () => {
+    return api.get('/users/technicians', { headers: authHeader() });
 };
 
 // ==================== COMMENT API ====================

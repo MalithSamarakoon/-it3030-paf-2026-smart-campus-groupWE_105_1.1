@@ -15,6 +15,7 @@ public class UserResponse {
     private String password;
     private String phoneNumber;
     private Role role;
+    private String technicianType;
     private String profilePicturePath;
     private String token;
 

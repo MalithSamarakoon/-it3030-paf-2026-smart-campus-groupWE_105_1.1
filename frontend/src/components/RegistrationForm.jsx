@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 
 const RegistrationForm = () => {
     const initialState = {
+        role: 'STUDENT',
+        technicianType: '',
         username: '',
         email: '',
         phone: '',
@@ -40,16 +42,27 @@ const RegistrationForm = () => {
 
         switch (name) {
             case 'email':
-
-                const emailRegex = /^it.*@my\.sliit\.lk$/i;
-                if (!emailRegex.test(value)) {
-                    errorMsg = "Use your university email (e.g., it21XXXXXX@my.sliit.lk)";
+                if (formData.role === 'TECHNICIAN') {
+                    const staffEmailRegex = /^[A-Za-z0-9._%+-]+@sliit\.lk$/i;
+                    if (!staffEmailRegex.test(value)) {
+                        errorMsg = "Use your staff email (e.g., alex@sliit.lk)";
+                    }
+                } else {
+                    const studentEmailRegex = /^it.*@my\.sliit\.lk$/i;
+                    if (!studentEmailRegex.test(value)) {
+                        errorMsg = "Use your university email (e.g., it21XXXXXX@my.sliit.lk)";
+                    }
                 }
                 break;
             case 'phone':
                 const phoneRegex = /^\d{10}$/;
                 if (!phoneRegex.test(value)) {
                     errorMsg = "Phone number must have exactly 10 digits.";
+                }
+                break;
+            case 'technicianType':
+                if (formData.role === 'TECHNICIAN' && !value) {
+                    errorMsg = 'Please select a technician type.';
                 }
                 break;
             default:
@@ -75,9 +88,11 @@ const RegistrationForm = () => {
         setLoading(true);
         try {
             const payload = {
-                username: formData.username,
+                role: formData.role,
+                username: formData.role === 'TECHNICIAN' ? null : formData.username,
                 email: formData.email,
-                phoneNumber: formData.phone,
+                phoneNumber: formData.role === 'TECHNICIAN' ? null : formData.phone,
+                technicianType: formData.role === 'TECHNICIAN' ? formData.technicianType : null,
                 password: formData.password
             };
 
@@ -106,11 +121,45 @@ const RegistrationForm = () => {
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="space-y-2">
+                <label className="text-green-700 font-semibold text-sm mb-1 ml-1">Register As</label>
+                <div className="grid grid-cols-2 gap-2">
+                    {[{ value: 'STUDENT', label: 'Student' }, { value: 'TECHNICIAN', label: 'Technician' }].map(option => (
+                        <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    role: option.value,
+                                    email: '',
+                                    username: '',
+                                    phone: '',
+                                    technicianType: ''
+                                }));
+                                setErrors({});
+                            }}
+                            className={`rounded-xl px-3 py-2 text-sm font-bold border transition-all ${
+                                formData.role === option.value
+                                    ? 'bg-emerald-600 text-white border-emerald-600'
+                                    : 'bg-white text-slate-700 border-slate-300 hover:border-emerald-400'
+                            }`}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="space-y-4">
                 {[
-                    { label: 'Username', name: 'username', type: 'text' },
-                    { label: 'University Email', name: 'email', type: 'email' },
-                    { label: 'Phone Number', name: 'phone', type: 'text' },
+                    ...(formData.role === 'TECHNICIAN' ? [] : [{ label: 'Username', name: 'username', type: 'text' }]),
+                    {
+                        label: formData.role === 'TECHNICIAN' ? 'Staff Email' : 'University Email',
+                        name: 'email',
+                        type: 'email'
+                    },
+                    ...(formData.role === 'TECHNICIAN' ? [] : [{ label: 'Phone Number', name: 'phone', type: 'text' }]),
                 ].map((field) => (
                     <div key={field.name} className="flex flex-col">
                         <label className="text-green-700 font-semibold text-sm mb-1 ml-1">{field.label}</label>
@@ -129,6 +178,28 @@ const RegistrationForm = () => {
                         {errors[field.name] && <span className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors[field.name]}</span>}
                     </div>
                 ))}
+
+                {formData.role === 'TECHNICIAN' && (
+                    <div className="flex flex-col">
+                        <label className="text-green-700 font-semibold text-sm mb-1 ml-1">Technician Type</label>
+                        <select
+                            name="technicianType"
+                            value={formData.technicianType}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            className={`w-full border rounded-xl p-2 focus:outline-none focus:ring-2 transition-all ${
+                                errors.technicianType ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-green-300'
+                            }`}
+                            required
+                        >
+                            <option value="">Select type</option>
+                            <option value="ELECTRICAL">Electrical</option>
+                            <option value="PLUMBING">Plumbing</option>
+                            <option value="IT_EQUIPMENT">IT Equipment</option>
+                        </select>
+                        {errors.technicianType && <span className="text-red-500 text-[10px] mt-1 ml-1 font-medium">{errors.technicianType}</span>}
+                    </div>
+                )}
 
                 <div className="flex flex-col">
                     <label className="text-green-700 font-semibold text-sm mb-1 ml-1">Password</label>

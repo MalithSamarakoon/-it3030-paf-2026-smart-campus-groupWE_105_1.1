@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getTicketById, updateTicketStatus, assignTicket } from '../api/ticketApi';
+import { getTicketById, updateTicketStatus, assignTicket, getTechnicians } from '../api/ticketApi';
 import StatusBadge from '../components/tickets/StatusBadge';
 import CommentSection from '../components/tickets/CommentSection';
 
@@ -13,6 +13,7 @@ const TicketDetailPage = () => {
     const [actionLoading, setActionLoading] = useState(false);
     const [showAssign, setShowAssign] = useState(false);
     const [assignUserId, setAssignUserId] = useState('');
+    const [technicians, setTechnicians] = useState([]);
     const [rejectionReason, setRejectionReason] = useState('');
     const [resolutionNotes, setResolutionNotes] = useState('');
     const [showRejectModal, setShowRejectModal] = useState(false);
@@ -22,6 +23,7 @@ const TicketDetailPage = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     const isAdmin = user?.roles?.includes('ROLE_ADMIN');
     const isStaff = user?.roles?.includes('ROLE_STAFF');
+    const isAssignedTechnician = isStaff && ticket?.assignedToId === user?.id;
 
     const fetchTicket = async () => {
         setLoading(true);
@@ -39,6 +41,20 @@ const TicketDetailPage = () => {
     useEffect(() => {
         fetchTicket();
     }, [id]);
+
+    useEffect(() => {
+        const fetchTechnicianOptions = async () => {
+            if (!isAdmin) return;
+            try {
+                const res = await getTechnicians();
+                setTechnicians(res.data || []);
+            } catch (err) {
+                toast.error('Failed to load technicians');
+            }
+        };
+
+        fetchTechnicianOptions();
+    }, [isAdmin]);
 
     const handleStatusChange = async (newStatus, extras = {}) => {
         setActionLoading(true);
@@ -87,7 +103,7 @@ const TicketDetailPage = () => {
         const actions = [];
 
         if (ticket.status === 'OPEN') {
-            if (isAdmin || isStaff) {
+            if (isAdmin || isAssignedTechnician) {
                 actions.push({ status: 'IN_PROGRESS', label: '▶ Start Working', color: 'bg-amber-500 hover:bg-amber-600' });
             }
             if (isAdmin) {
@@ -96,7 +112,7 @@ const TicketDetailPage = () => {
         }
 
         if (ticket.status === 'IN_PROGRESS') {
-            if (isAdmin || isStaff) {
+            if (isAdmin || isAssignedTechnician) {
                 actions.push({ status: 'RESOLVED', label: '✅ Mark Resolved', color: 'bg-emerald-500 hover:bg-emerald-600', modal: true });
             }
             if (isAdmin) {
@@ -268,7 +284,14 @@ const TicketDetailPage = () => {
                                                     {ticket.assignedToUsername?.charAt(0)?.toUpperCase()}
                                                 </span>
                                             </div>
-                                            <span className="text-sm font-medium text-slate-700">{ticket.assignedToUsername}</span>
+                                            <div>
+                                                <span className="text-sm font-medium text-slate-700">{ticket.assignedToUsername}</span>
+                                                {ticket.assignedToTechnicianType && (
+                                                    <p className="text-[11px] text-slate-500 font-semibold">
+                                                        {ticket.assignedToTechnicianType.replace('_', ' ')}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     ) : (
                                         <p className="text-sm text-slate-400 mt-1">Unassigned</p>
@@ -295,13 +318,18 @@ const TicketDetailPage = () => {
                                 <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Assign Technician</h3>
                                 {showAssign ? (
                                     <div className="space-y-2">
-                                        <input
-                                            type="number"
-                                            placeholder="User ID"
+                                        <select
                                             value={assignUserId}
                                             onChange={(e) => setAssignUserId(e.target.value)}
                                             className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                                        />
+                                        >
+                                            <option value="">Select technician</option>
+                                            {technicians.map(tech => (
+                                                <option key={tech.id} value={tech.id}>
+                                                    {tech.username} - {String(tech.technicianType || '').replace('_', ' ')}
+                                                </option>
+                                            ))}
+                                        </select>
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={handleAssign}
@@ -323,7 +351,7 @@ const TicketDetailPage = () => {
                                         onClick={() => setShowAssign(true)}
                                         className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-sm font-semibold text-slate-500 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
                                     >
-                                        + Assign Staff
+                                        + Assign Technician
                                     </button>
                                 )}
                             </div>

@@ -52,6 +52,10 @@ const AccountPage = () => {
         ? `${backendOrigin}/images/profiles/${profile.profilePicturePath}`
         : 'https://via.placeholder.com/150?text=Profile';
 
+    const roleLabel = profile.role === 'ROLE_STAFF'
+        ? 'TECHNICIAN'
+        : String(profile.role || '').replace('ROLE_', '');
+
     return (
         <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
             <div className="w-full max-w-2xl bg-white rounded-3xl border-2 border-green-400 p-8 shadow-lg">
@@ -73,7 +77,7 @@ const AccountPage = () => {
 
                     <h1 className="text-2xl font-bold text-gray-800 mt-4">{profile.username}</h1>
                     <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium mt-1">
-                        {profile.role}
+                        {roleLabel}
                     </span>
 
                     <div className="mt-8 w-full space-y-4">

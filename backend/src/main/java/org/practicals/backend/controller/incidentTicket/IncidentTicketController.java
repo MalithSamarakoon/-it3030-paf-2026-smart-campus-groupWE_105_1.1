@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tickets")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
 public class IncidentTicketController {
 
     private final IncidentTicketService ticketService;
@@ -44,9 +44,17 @@ public class IncidentTicketController {
         return ResponseEntity.ok(ticketService.getMyTickets(username));
     }
 
+    @GetMapping("/assigned")
+    @PreAuthorize("hasRole('STAFF')")
+    public ResponseEntity<List<TicketResponse>> getAssignedTickets(Authentication authentication) {
+        String username = getUsername(authentication);
+        return ResponseEntity.ok(ticketService.getAssignedTickets(username));
+    }
+
     @GetMapping("/{id}")
-    public ResponseEntity<TicketResponse> getTicketById(@PathVariable Long id) {
-        return ResponseEntity.ok(ticketService.getTicketById(id));
+    public ResponseEntity<TicketResponse> getTicketById(@PathVariable Long id, Authentication authentication) {
+        String username = getUsername(authentication);
+        return ResponseEntity.ok(ticketService.getTicketById(id, username));
     }
 
     @PatchMapping("/{id}/status")

@@ -31,6 +31,9 @@ public class User {
     private String profilePicturePath;
 
     @Enumerated(EnumType.STRING)
+    private TechnicianType technicianType;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
 }

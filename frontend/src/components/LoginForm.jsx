@@ -52,7 +52,7 @@ const LoginForm = () => {
             <form onSubmit={handleLogin} className="space-y-6">
                 <div>
                     <label className="block text-green-700 font-semibold mb-2 ml-1 text-sm">
-                        Username
+                        Username or Email
                     </label>
                     <input
                         type="text"

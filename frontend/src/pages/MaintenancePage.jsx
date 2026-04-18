@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { getAllTickets, getMyTickets } from '../api/ticketApi';
+import { getAllTickets, getAssignedTickets, getMyTickets } from '../api/ticketApi';
 import TicketCard from '../components/tickets/TicketCard';
 import CreateTicketForm from '../components/tickets/CreateTicketForm';
 
@@ -12,11 +12,14 @@ const MaintenancePage = () => {
 
     const user = JSON.parse(localStorage.getItem('user'));
     const isAdmin = user?.roles?.includes('ROLE_ADMIN');
+    const isTechnician = user?.roles?.includes('ROLE_STAFF');
 
     const fetchTickets = async () => {
         setLoading(true);
         try {
-            const res = isAdmin ? await getAllTickets() : await getMyTickets();
+            const res = isAdmin
+                ? await getAllTickets()
+                : (isTechnician ? await getAssignedTickets() : await getMyTickets());
             setTickets(res.data);
         } catch (err) {
             toast.error('Failed to load tickets');
@@ -27,7 +30,7 @@ const MaintenancePage = () => {
 
     useEffect(() => {
         fetchTickets();
-    }, []);
+    }, [isAdmin, isTechnician]);
 
     const filteredTickets = filter === 'ALL'
         ? tickets
@@ -62,15 +65,21 @@ const MaintenancePage = () => {
                                 🛠️ Maintenance Tickets
                             </h1>
                             <p className="text-sm text-slate-400 mt-1">
-                                {isAdmin ? 'Manage all campus maintenance requests' : 'Track your maintenance requests'}
+                                {isAdmin
+                                    ? 'Manage all campus maintenance requests'
+                                    : (isTechnician
+                                        ? 'View and handle tickets assigned to you'
+                                        : 'Track your maintenance requests')}
                             </p>
                         </div>
-                        <button
-                            onClick={() => setShowCreate(true)}
-                            className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2"
-                        >
-                            <span className="text-lg">+</span> Create Ticket
-                        </button>
+                        {!isAdmin && !isTechnician && (
+                            <button
+                                onClick={() => setShowCreate(true)}
+                                className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <span className="text-lg">+</span> Create Ticket
+                            </button>
+                        )}
                     </div>
 
                     {/* Stats Cards */}
@@ -107,7 +116,9 @@ const MaintenancePage = () => {
                         <div className="text-6xl mb-4">🎉</div>
                         <h3 className="text-lg font-bold text-slate-700">No tickets found</h3>
                         <p className="text-sm text-slate-400 mt-1">
-                            {filter === 'ALL' ? "You haven't created any tickets yet." : `No ${filter.replace('_', ' ').toLowerCase()} tickets.`}
+                            {filter === 'ALL'
+                                ? (isTechnician ? "No tickets have been assigned to you yet." : "You haven't created any tickets yet.")
+                                : `No ${filter.replace('_', ' ').toLowerCase()} tickets.`}
                         </p>
                     </div>
                 ) : (

@@ -67,8 +67,28 @@ public class IncidentTicketService {
                 .collect(Collectors.toList());
     }
 
-    public TicketResponse getTicketById(Long id) {
+    public List<TicketResponse> getAssignedTickets(String username) {
+        User user = findUserByUsername(username);
+        return ticketRepository.findByAssignedToIdOrderByCreatedAtDesc(user.getId())
+                .stream()
+                .map(t -> mapToTicketResponse(t, false))
+                .collect(Collectors.toList());
+    }
+
+    public TicketResponse getTicketById(Long id, String username) {
         IncidentTicket ticket = findTicketById(id);
+        User user = findUserByUsername(username);
+
+        boolean isAdmin = user.getRole() == Role.ROLE_ADMIN;
+        boolean isStaffAssignee = user.getRole() == Role.ROLE_STAFF
+                && ticket.getAssignedTo() != null
+                && ticket.getAssignedTo().getId().equals(user.getId());
+        boolean isOwner = ticket.getCreatedBy().getId().equals(user.getId());
+
+        if (!isAdmin && !isStaffAssignee && !isOwner) {
+            throw new IllegalArgumentException("You are not authorized to view this ticket.");
+        }
+
         return mapToTicketResponse(ticket, true);
     }
 
@@ -80,7 +100,7 @@ public class IncidentTicketService {
         TicketStatus newStatus = TicketStatus.valueOf(request.getStatus());
 
         // Validate workflow transitions
-        validateStatusTransition(ticket.getStatus(), newStatus, user);
+        validateStatusTransition(ticket, newStatus, user);
 
         ticket.setStatus(newStatus);
 
@@ -101,6 +121,10 @@ public class IncidentTicketService {
         IncidentTicket ticket = findTicketById(id);
         User assignee = userRepository.findById(request.getAssignedToUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getAssignedToUserId()));
+
+        if (assignee.getRole() != Role.ROLE_STAFF) {
+            throw new IllegalArgumentException("Only technicians can be assigned to tickets.");
+        }
 
         ticket.setAssignedTo(assignee);
 
@@ -172,9 +196,18 @@ public class IncidentTicketService {
 
     // ==================== HELPER METHODS ====================
 
-    private void validateStatusTransition(TicketStatus current, TicketStatus next, User user) {
+    private void validateStatusTransition(IncidentTicket ticket, TicketStatus next, User user) {
+        TicketStatus current = ticket.getStatus();
         boolean isAdmin = user.getRole() == Role.ROLE_ADMIN;
         boolean isStaff = user.getRole() == Role.ROLE_STAFF;
+
+        if (isStaff) {
+            boolean isAssignedTechnician = ticket.getAssignedTo() != null
+                    && ticket.getAssignedTo().getId().equals(user.getId());
+            if (!isAssignedTechnician) {
+                throw new IllegalArgumentException("You can only update tickets assigned to you.");
+            }
+        }
 
         // Admin can reject from any status
         if (next == TicketStatus.REJECTED && isAdmin) {
@@ -236,6 +269,11 @@ public class IncidentTicketService {
         if (ticket.getAssignedTo() != null) {
             response.setAssignedToUsername(ticket.getAssignedTo().getUsername());
             response.setAssignedToId(ticket.getAssignedTo().getId());
+            response.setAssignedToTechnicianType(
+                    ticket.getAssignedTo().getTechnicianType() != null
+                            ? ticket.getAssignedTo().getTechnicianType().name()
+                            : null
+            );
         }
 
         response.setCommentCount(ticket.getComments() != null ? ticket.getComments().size() : 0);
