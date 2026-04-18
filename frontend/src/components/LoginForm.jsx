@@ -39,7 +39,8 @@ const LoginForm = () => {
 
 
     const handleGoogleLogin = () => {
-        window.location.href = "http://localhost:8081/oauth2/authorization/google";
+        const backendOrigin = new URL(api.defaults.baseURL).origin;
+        window.location.href = `${backendOrigin}/oauth2/authorization/google`;
     };
 
     return (
@@ -51,7 +52,7 @@ const LoginForm = () => {
             <form onSubmit={handleLogin} className="space-y-6">
                 <div>
                     <label className="block text-green-700 font-semibold mb-2 ml-1 text-sm">
-                        Username
+                        Username or Email
                     </label>
                     <input
                         type="text"

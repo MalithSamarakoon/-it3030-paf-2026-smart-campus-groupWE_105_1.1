@@ -39,7 +39,7 @@ const Footer = () => {
                         <li><Link to="/resources" className="hover:text-emerald-400 transition-colors">Resource Catalogue [cite: 50]</Link></li>
                         <li><Link to="/bookings" className="hover:text-emerald-400 transition-colors">Booking System [cite: 55]</Link></li>
                         <li><Link to="/maintenance" className="hover:text-emerald-400 transition-colors">Incident Ticketing [cite: 66]</Link></li>
-                        <li><Link to="/notifications" className="hover:text-emerald-400 transition-colors">Notifications Panel [cite: 74]</Link></li>
+                        <li><span className="text-slate-500 cursor-default">Notifications Panel (coming soon)</span></li>
                     </ul>
                 </div>
 
@@ -47,7 +47,7 @@ const Footer = () => {
                 <div>
                     <h4 className="text-white font-bold mb-6">Support</h4>
                     <ul className="space-y-4 text-sm">
-                        <li><Link to="/faq" className="hover:text-emerald-400 transition-colors">Help & FAQ</Link></li>
+                        <li><span className="text-slate-500 cursor-default">Help & FAQ (coming soon)</span></li>
                         <li><span className="hover:text-emerald-400 cursor-pointer transition-colors">IT Support Desk</span></li>
                         <li><span className="hover:text-emerald-400 cursor-pointer transition-colors">Privacy Policy</span></li>
                         <li><span className="hover:text-emerald-400 cursor-pointer transition-colors">User Manual</span></li>
