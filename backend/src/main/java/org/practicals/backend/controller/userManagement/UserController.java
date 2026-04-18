@@ -1,5 +1,6 @@
 package org.practicals.backend.controller.userManagement;
 
+import jakarta.validation.Valid;
 import org.practicals.backend.dto.userManagement.TechnicianOptionResponse;
 import org.practicals.backend.dto.userManagement.UserResponse;
 import org.practicals.backend.dto.userManagement.UserUpdateRequest;
@@ -33,7 +34,7 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateProfile(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestPart("user") UserUpdateRequest request,
+            @Valid @RequestPart("user") UserUpdateRequest request,
             @RequestPart(value = "profileImage", required = false) MultipartFile image) throws IOException {
         return ResponseEntity.ok(userService.updateUserProfile(userDetails.getId(), request, image));
     }

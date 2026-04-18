@@ -1,5 +1,6 @@
 package org.practicals.backend.controller.incidentTicket;
 
+import jakarta.validation.Valid;
 import org.practicals.backend.dto.incidentTicket.*;
 import org.practicals.backend.security.services.UserDetailsImpl;
 import org.practicals.backend.service.incidentTicket.IncidentTicketService;
@@ -25,7 +26,7 @@ public class IncidentTicketController {
     // ==================== TICKET ENDPOINTS ====================
 
     @PostMapping
-    public ResponseEntity<TicketResponse> createTicket(@RequestBody CreateTicketRequest request,
+    public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody CreateTicketRequest request,
                                                         Authentication authentication) {
         String username = getUsername(authentication);
         TicketResponse response = ticketService.createTicket(request, username);
@@ -59,7 +60,7 @@ public class IncidentTicketController {
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<TicketResponse> updateTicketStatus(@PathVariable Long id,
-                                                              @RequestBody UpdateTicketStatusRequest request,
+                                                              @Valid @RequestBody UpdateTicketStatusRequest request,
                                                               Authentication authentication) {
         String username = getUsername(authentication);
         return ResponseEntity.ok(ticketService.updateTicketStatus(id, request, username));
@@ -68,7 +69,7 @@ public class IncidentTicketController {
     @PatchMapping("/{id}/assign")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TicketResponse> assignTicket(@PathVariable Long id,
-                                                       @RequestBody AssignTicketRequest request) {
+                                                       @Valid @RequestBody AssignTicketRequest request) {
         return ResponseEntity.ok(ticketService.assignTicket(id, request));
     }
 
@@ -76,7 +77,7 @@ public class IncidentTicketController {
 
     @PostMapping("/{id}/comments")
     public ResponseEntity<CommentResponse> addComment(@PathVariable Long id,
-                                                       @RequestBody CommentRequest request,
+                                                       @Valid @RequestBody CommentRequest request,
                                                        Authentication authentication) {
         String username = getUsername(authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.addComment(id, request, username));
@@ -85,7 +86,7 @@ public class IncidentTicketController {
     @PutMapping("/{ticketId}/comments/{commentId}")
     public ResponseEntity<CommentResponse> updateComment(@PathVariable Long ticketId,
                                                           @PathVariable Long commentId,
-                                                          @RequestBody CommentRequest request,
+                                                          @Valid @RequestBody CommentRequest request,
                                                           Authentication authentication) {
         String username = getUsername(authentication);
         return ResponseEntity.ok(ticketService.updateComment(commentId, request, username));
