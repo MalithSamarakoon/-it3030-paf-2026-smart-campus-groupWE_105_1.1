@@ -17,5 +17,4 @@ public class UserResponse {
     private Role role;
     private String profilePicturePath;
     private String token;
-
 }

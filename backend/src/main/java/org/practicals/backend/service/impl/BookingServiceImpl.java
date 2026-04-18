@@ -71,7 +71,7 @@ public class BookingServiceImpl implements BookingService {
             Booking conflict = conflicts.get(0);
             throw new IllegalArgumentException(
                     "Time slot conflicts with an existing booking from "
-                    + conflict.getStartTime() + " to " + conflict.getEndTime());
+                            + conflict.getStartTime() + " to " + conflict.getEndTime());
         }
 
         // --- Persist booking ---

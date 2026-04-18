@@ -120,10 +120,18 @@ const Navbar = () => {
             {/* Navigation Bar: Links */}
             <nav className="bg-emerald-600">
                 <ul className="flex justify-center items-center gap-10 py-3.5 text-xs font-bold text-emerald-50 tracking-wide uppercase">
-                    <li className="hover:text-white cursor-pointer transition-colors relative group">
-                        About
-                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
-                    </li>
+                    {(!user || !user.roles?.includes('ROLE_ADMIN')) && (
+                        <li className="hover:text-white cursor-pointer transition-colors relative group">
+                            About
+                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
+                        </li>
+                    )}
+                    {user && user.roles?.includes('ROLE_ADMIN') && (
+                        <li className="hover:text-white cursor-pointer transition-colors relative group">
+                            <Link to="/admin/users">Users</Link>
+                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
+                        </li>
+                    )}
                     <li className="hover:text-white cursor-pointer transition-colors relative group">
                         <Link to="/resources">Resources</Link>
                         <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
