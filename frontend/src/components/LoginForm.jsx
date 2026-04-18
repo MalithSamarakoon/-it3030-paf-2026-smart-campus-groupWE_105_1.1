@@ -39,7 +39,8 @@ const LoginForm = () => {
 
 
     const handleGoogleLogin = () => {
-        window.location.href = "http://localhost:8081/oauth2/authorization/google";
+        const backendOrigin = new URL(api.defaults.baseURL).origin;
+        window.location.href = `${backendOrigin}/oauth2/authorization/google`;
     };
 
     return (

@@ -8,6 +8,7 @@ import { Camera } from 'lucide-react';
 const ProfileEditPage = () => {
     const user = getUser();
     const navigate = useNavigate();
+    const backendOrigin = new URL(api.defaults.baseURL).origin;
     const [selectedFile, setSelectedFile] = useState(null);
     const [preview, setPreview] = useState('');
     const [formData, setFormData] = useState({
@@ -26,10 +27,10 @@ const ProfileEditPage = () => {
                 phoneNumber: res.data.phoneNumber || ''
             });
             if (res.data.profilePicturePath) {
-                setPreview(`http://localhost:8081/images/profiles/${res.data.profilePicturePath}`);
+                setPreview(`${backendOrigin}/images/profiles/${res.data.profilePicturePath}`);
             }
         });
-    }, [user?.token]);
+    }, [user?.token, backendOrigin]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];

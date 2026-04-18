@@ -14,7 +14,7 @@ const getApiOrigin = () => {
     try {
         return new URL(api.defaults.baseURL).origin;
     } catch {
-        return 'http://localhost:8081';
+        return 'http://localhost:8080';
     }
 };
 

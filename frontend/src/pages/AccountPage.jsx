@@ -46,8 +46,10 @@ const AccountPage = () => {
         </div>
     );
 
+    const backendOrigin = new URL(api.defaults.baseURL).origin;
+
     const imageUrl = profile.profilePicturePath
-        ? `http://localhost:8081/images/profiles/${profile.profilePicturePath}`
+        ? `${backendOrigin}/images/profiles/${profile.profilePicturePath}`
         : 'https://via.placeholder.com/150?text=Profile';
 
     return (
