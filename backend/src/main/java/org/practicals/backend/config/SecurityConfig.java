@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -19,6 +20,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.practicals.backend.security.oauth2.OAuth2AuthenticationSuccessHandler;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.Arrays;
 
@@ -29,12 +31,16 @@ public class SecurityConfig {
 
     private final AuthTokenFilter authTokenFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
+    private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepository;
 
 
-    public SecurityConfig(AuthTokenFilter authTokenFilter, OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
+    public SecurityConfig(AuthTokenFilter authTokenFilter,
+                          OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler,
+                          ObjectProvider<ClientRegistrationRepository> clientRegistrationRepository) {
 
         this.authTokenFilter = authTokenFilter;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.clientRegistrationRepository = clientRegistrationRepository;
     }
 
     @Bean
@@ -68,10 +74,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/bookings/**").hasAnyRole("STUDENT", "ADMIN")
                         .requestMatchers("/api/tickets/**").authenticated() // Ticket endpoints
                         .anyRequest().authenticated()
-                )
-                .oauth2Login(oauth2 -> oauth2
-                        .successHandler(oAuth2SuccessHandler) // Injected handler to generate JWT
                 );
+
+                if (clientRegistrationRepository.getIfAvailable() != null) {
+                    http.oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler));
+                }
 
 
         http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
