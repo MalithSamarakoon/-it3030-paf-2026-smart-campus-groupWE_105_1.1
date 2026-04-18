@@ -30,6 +30,12 @@ const Navbar = () => {
         navigate('/login');
     };
 
+    const getRoleLabel = (role) => {
+        if (!role) return '';
+        if (role === 'ROLE_STAFF') return 'TECHNICIAN';
+        return role.replace('ROLE_', '');
+    };
+
     return (
         <header className="w-full shadow-sm sticky top-0 z-50">
             {/* Top Bar: Logo, Notifications, and Profile/Auth */}
@@ -60,8 +66,7 @@ const Navbar = () => {
                                 <div className="text-right hidden sm:block">
                                     <p className="text-sm font-semibold text-slate-800 leading-tight">{user.username}</p>
                                     <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tighter">
-                                        {/* Display first role (e.g., ROLE_STUDENT) */}
-                                        {user.roles && user.roles[0]?.replace('ROLE_', '')}
+                                        {user.roles && getRoleLabel(user.roles[0])}
                                     </p>
                                 </div>
                                 <button
