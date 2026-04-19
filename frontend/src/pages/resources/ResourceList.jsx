@@ -13,16 +13,53 @@ const ResourceList = () => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     const isAdmin = storedUser?.roles?.includes('ROLE_ADMIN');
 
-    const fetchResources = async () => {
+    const normalizeFilters = (source) => ({
+        type: source?.type || '',
+        capacity: source?.capacity || '',
+        location: (source?.location || '').trim(),
+    });
+
+    const buildQueryParams = (activeFilters) => {
+        const queryParams = new URLSearchParams();
+
+        if (activeFilters.type) queryParams.append('type', activeFilters.type);
+
+        const parsedCapacity = Number(activeFilters.capacity);
+        if (activeFilters.capacity !== '' && Number.isFinite(parsedCapacity) && parsedCapacity >= 0) {
+            queryParams.append('capacity', String(parsedCapacity));
+        }
+
+        if (activeFilters.location) queryParams.append('location', activeFilters.location);
+
+        return queryParams;
+    };
+
+    const applyClientSideFilters = (data, activeFilters) => {
+        const parsedCapacity = Number(activeFilters.capacity);
+        const hasValidCapacity = activeFilters.capacity !== '' && Number.isFinite(parsedCapacity) && parsedCapacity >= 0;
+        const normalizedLocation = activeFilters.location.toLowerCase();
+
+        return data.filter((resource) => {
+            const matchesType = !activeFilters.type || resource.type === activeFilters.type;
+            const matchesCapacity = !hasValidCapacity || (Number(resource.capacity) || 0) >= parsedCapacity;
+            const matchesLocation = !normalizedLocation || String(resource.location || '').toLowerCase().includes(normalizedLocation);
+
+            return matchesType && matchesCapacity && matchesLocation;
+        });
+    };
+
+    const fetchResources = async (sourceFilters = filters) => {
         try {
             setLoading(true);
-            const queryParams = new URLSearchParams();
-            if (filters.type) queryParams.append('type', filters.type);
-            if (filters.capacity) queryParams.append('capacity', filters.capacity);
-            if (filters.location) queryParams.append('location', filters.location);
+            const activeFilters = normalizeFilters(sourceFilters);
+            const queryParams = buildQueryParams(activeFilters);
+            const queryString = queryParams.toString();
 
-            const response = await api.get(`/resources?${queryParams.toString()}`);
-            setResources(response.data);
+            const response = await api.get(queryString ? `/resources?${queryString}` : '/resources');
+            const list = Array.isArray(response.data) ? response.data : [];
+
+            // Keep filtering stable even if backend filtering is inconsistent for some combinations.
+            setResources(applyClientSideFilters(list, activeFilters));
         } catch (error) {
             toast.error("Failed to load resources");
         } finally {
@@ -40,7 +77,22 @@ const ResourceList = () => {
 
     const handleFilterSubmit = (e) => {
         e.preventDefault();
-        fetchResources();
+
+        const formData = new FormData(e.currentTarget);
+        const submittedFilters = {
+            type: formData.get('type') || '',
+            capacity: formData.get('capacity') || '',
+            location: formData.get('location') || '',
+        };
+
+        setFilters(submittedFilters);
+        fetchResources(submittedFilters);
+    };
+
+    const handleClearFilters = () => {
+        const clearedFilters = { type: '', capacity: '', location: '' };
+        setFilters(clearedFilters);
+        fetchResources(clearedFilters);
     };
 
     const handleDelete = async (id) => {
@@ -89,7 +141,7 @@ const ResourceList = () => {
                     <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg font-bold hover:bg-slate-700 transition duration-300">
                         Filter
                     </button>
-                    <button type="button" onClick={() => { setFilters({ type: '', capacity: '', location: '' }); setTimeout(fetchResources, 0); }} className="ml-3 bg-slate-200 text-slate-800 px-6 py-2 rounded-lg font-bold hover:bg-slate-300 transition duration-300">
+                    <button type="button" onClick={handleClearFilters} className="ml-3 bg-slate-200 text-slate-800 px-6 py-2 rounded-lg font-bold hover:bg-slate-300 transition duration-300">
                         Clear
                     </button>
                 </div>
