@@ -62,15 +62,14 @@ const BookingList = () => {
     const fetchBookings = useCallback(async () => {
         setLoading(true);
         try {
-            const params = statusFilter ? `?status=${statusFilter}` : '';
-            const response = await api.get(`/bookings${params}`);
+            const response = await api.get('/bookings');
             setBookings(response.data);
         } catch {
             toast.error('Failed to load bookings');
         } finally {
             setLoading(false);
         }
-    }, [statusFilter]);
+    }, []);
 
     useEffect(() => {
         fetchBookings();
@@ -118,6 +117,10 @@ const BookingList = () => {
             toast.error(error.response?.data?.error || 'Failed to delete booking');
         }
     };
+
+    const filteredBookings = statusFilter
+        ? bookings.filter(booking => booking.status === statusFilter)
+        : bookings;
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -181,14 +184,14 @@ const BookingList = () => {
                                     Loading bookings...
                                 </td>
                             </tr>
-                        ) : bookings.length === 0 ? (
+                        ) : filteredBookings.length === 0 ? (
                             <tr>
                                 <td colSpan={isAdmin ? 8 : 7} className="p-10 text-center text-slate-400">
                                     No bookings found.
                                 </td>
                             </tr>
                         ) : (
-                            bookings.map(booking => (
+                            filteredBookings.map(booking => (
                                 <tr key={booking.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                     <td className="p-4">
                                         <p className="font-semibold text-slate-800 text-sm">{booking.resourceName}</p>
