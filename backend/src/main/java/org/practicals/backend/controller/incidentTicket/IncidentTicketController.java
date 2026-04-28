@@ -33,6 +33,21 @@ public class IncidentTicketController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<TicketResponse> updateTicket(@PathVariable Long id,
+                                                       @Valid @RequestBody UpdateTicketRequest request,
+                                                       Authentication authentication) {
+        String username = getUsername(authentication);
+        return ResponseEntity.ok(ticketService.updateTicket(id, request, username));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteTicket(@PathVariable Long id, Authentication authentication) {
+        String username = getUsername(authentication);
+        ticketService.deleteTicket(id, username);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<TicketResponse>> getAllTickets() {

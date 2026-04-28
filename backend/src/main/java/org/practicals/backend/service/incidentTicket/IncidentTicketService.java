@@ -52,6 +52,77 @@ public class IncidentTicketService {
         return mapToTicketResponse(saved, false);
     }
 
+    @Transactional
+    public TicketResponse updateTicket(Long id, UpdateTicketRequest request, String username) {
+        IncidentTicket ticket = findTicketById(id);
+        User user = findUserByUsername(username);
+
+        if (!isOwnerOrAdmin(ticket, user)) {
+            throw new IllegalArgumentException("You are not authorized to update this ticket.");
+        }
+
+        if (request.getTitle() != null) {
+            if (request.getTitle().trim().isEmpty()) {
+                throw new IllegalArgumentException("Title cannot be empty");
+            }
+            ticket.setTitle(request.getTitle().trim());
+        }
+
+        if (request.getDescription() != null) {
+            if (request.getDescription().trim().isEmpty()) {
+                throw new IllegalArgumentException("Description cannot be empty");
+            }
+            ticket.setDescription(request.getDescription().trim());
+        }
+
+        if (request.getCategory() != null) {
+            ticket.setCategory(TicketCategory.valueOf(request.getCategory()));
+        }
+
+        if (request.getPriority() != null) {
+            ticket.setPriority(TicketPriority.valueOf(request.getPriority()));
+        }
+
+        if (request.getResourceLocation() != null) {
+            if (request.getResourceLocation().trim().isEmpty()) {
+                throw new IllegalArgumentException("Resource location cannot be empty");
+            }
+            ticket.setResourceLocation(request.getResourceLocation().trim());
+        }
+
+        if (request.getPreferredContact() != null) {
+            if (request.getPreferredContact().trim().isEmpty()) {
+                throw new IllegalArgumentException("Preferred contact cannot be empty");
+            }
+            ticket.setPreferredContact(request.getPreferredContact().trim());
+        }
+
+        if (request.getImageData1() != null) {
+            ticket.setImageData1(request.getImageData1());
+        }
+        if (request.getImageData2() != null) {
+            ticket.setImageData2(request.getImageData2());
+        }
+        if (request.getImageData3() != null) {
+            ticket.setImageData3(request.getImageData3());
+        }
+
+        IncidentTicket saved = ticketRepository.save(ticket);
+        return mapToTicketResponse(saved, true);
+    }
+
+    @Transactional
+    public void deleteTicket(Long id, String username) {
+        IncidentTicket ticket = findTicketById(id);
+        User user = findUserByUsername(username);
+
+        if (!isOwnerOrAdmin(ticket, user)) {
+            throw new IllegalArgumentException("You are not authorized to delete this ticket.");
+        }
+
+        ticketRepository.delete(ticket);
+    }
+
     public List<TicketResponse> getAllTickets() {
         return ticketRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
@@ -215,21 +286,16 @@ public class IncidentTicketService {
         }
 
         // Valid workflow transitions
-        switch (current) {
-            case OPEN:
-                if (next == TicketStatus.IN_PROGRESS && (isAdmin || isStaff)) return;
-                break;
-            case IN_PROGRESS:
-                if (next == TicketStatus.RESOLVED && (isAdmin || isStaff)) return;
-                break;
-            case RESOLVED:
-                if (next == TicketStatus.CLOSED && isAdmin) return;
-                if (next == TicketStatus.IN_PROGRESS && (isAdmin || isStaff)) return; // reopen
-                break;
-            case CLOSED:
-            case REJECTED:
-                // No further transitions allowed
-                break;
+        boolean validTransition = switch (current) {
+            case OPEN -> next == TicketStatus.IN_PROGRESS && (isAdmin || isStaff);
+            case IN_PROGRESS -> next == TicketStatus.RESOLVED && (isAdmin || isStaff);
+            case RESOLVED -> (next == TicketStatus.CLOSED && isAdmin)
+                    || (next == TicketStatus.IN_PROGRESS && (isAdmin || isStaff));
+            case CLOSED, REJECTED -> false;
+        };
+
+        if (validTransition) {
+            return;
         }
 
         throw new IllegalArgumentException(
@@ -287,6 +353,10 @@ public class IncidentTicketService {
         }
 
         return response;
+    }
+
+    private boolean isOwnerOrAdmin(IncidentTicket ticket, User user) {
+        return user.getRole() == Role.ROLE_ADMIN || ticket.getCreatedBy().getId().equals(user.getId());
     }
 
     private CommentResponse mapToCommentResponse(TicketComment comment) {
